@@ -174,3 +174,6 @@ poetry.toml
 
 # api_key
 api_key.txt
+
+# ppt
+*.pptx
