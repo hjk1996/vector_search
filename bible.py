@@ -16,6 +16,15 @@ class Bible:
     def __getitem__(self, index: int):
         return self.books[index]
 
+    def get_chapter_name_by_index(self, index: int) -> str:
+        count = 0
+        for book in self.books:
+            for chapter in book:
+                
+                if count == index:
+                    return f"{book.name} {chapter.number}"
+                count += 1
+
 
     def get_book_name_by_index(self, index: int) -> str:
         return self.books[index].name

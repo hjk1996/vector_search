@@ -177,3 +177,6 @@ api_key.txt
 
 # ppt
 *.pptx
+
+# data
+*.json

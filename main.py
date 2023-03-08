@@ -8,26 +8,42 @@ import utils
 from tqdm import tqdm
 
 
+async def summarize_and_save(difficulty: str, max_lines: int) -> None:
+    openai.api_key = utils.load_api_key()
+    collection = db.BibleSummaryCollection()
+    bible = Bible("data/nrsv_bible.xml")
+
+    for book in bible.books:
+        for chapter in tqdm(book, desc=f"Summarizing {book.name}"):
+            summary = await openai_functions.summarize_bible(
+                book_name=book.name,
+                chapter_number=chapter.number,
+                difficulty=difficulty,
+                max_lines=max_lines,
+            )
+            collection.collection.update_one(
+                {"book": book.name, "chapter": chapter.number},
+                {"$push": {f"{max_lines}_line_summaries": summary.to_json()}},
+            )
+
+
 async def main():
     openai.api_key = utils.load_api_key()
     collection = db.BibleSummaryCollection()
     bible = Bible("data/nrsv_bible.xml")
 
-    for book in bible[22:]:
-        for chapter in tqdm(book, desc=f"Processing {book.name} - {book.number}") :
-            res = await openai_functions.summarize_bible(
-                book_name=chapter.book_name, chapter_number=chapter.number, max_lines=10, difficulty="easy"
+    for book in bible.books:
+        for chapter in tqdm(book, desc=f"Summarizing {book.name}"):
+            summary = await openai_functions.summarize_bible(
+                book_name=book.name,
+                chapter_number=chapter.number,
+                difficulty="easy",
+                max_lines=1,
             )
-            query = {
-                "book_number": book.number,
-                "chapter": chapter.number,
-            }
-            new_values = {
-                "$push": {
-                    "summaries": res.to_json()
-                }
-            }
-            collection.collection.update_one(query, new_values)
+            collection.collection.update_one(
+                {"book": book.name, "chapter": chapter.number},
+                {"$push": {"one_line_summaries": summary.to_json()}},
+            )
 
 
 asyncio.run(main())
