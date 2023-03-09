@@ -29,6 +29,8 @@ class ChapterSummary:
     book_number: int = field(repr=True)
     chapter: int = field(repr=True)
     ten_line_summaries: list[Summary] = field(repr=True)
+    five_line_summaries: list[Summary] = field(repr=True)
+    one_line_summaries: list[Summary] = field(repr=True)
 
     @classmethod
     def from_json(cls, json):
@@ -38,6 +40,12 @@ class ChapterSummary:
             chapter=json["chapter"],
             ten_line_summaries=list(
                 map(lambda x: Summary.from_json(x), json["ten_line_summaries"])
+            ),
+            five_line_summaries=list(
+                map(lambda x: Summary.from_json(x), json["five_line_summaries"])
+            ),
+            one_line_summaries=list(
+                map(lambda x: Summary.from_json(x), json["one_line_summaries"])
             ),
         )
 
@@ -49,4 +57,17 @@ class ChapterSummary:
             "ten_line_summaries": list(
                 map(lambda x: x.to_json(), self.ten_line_summaries)
             ),
+            "five_line_summaries": list(
+                map(lambda x: x.to_json(), self.five_line_summaries)
+            ),
+            "one_line_summaries": list(
+                map(lambda x: x.to_json(), self.one_line_summaries)
+            ),
         }
+
+    def get_summaries(self) -> list[Summary]:
+        attrs = [attr for attr in dir(self) if "summaries" in attr]
+        summaries = []
+        for attr in attrs:
+            summaries += getattr(self, attr)
+        return summaries

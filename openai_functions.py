@@ -1,7 +1,7 @@
 import openai
 import utils
 import asyncio
-from model import Summary
+from data_classes import Summary
 
 
 def get_embedding(text: str):

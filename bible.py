@@ -1,11 +1,17 @@
+import json
+from typing import List
+
 from xml.etree.ElementTree import Element
 import xml.etree.ElementTree as ET
 
 
+
 class Bible:
-    def __init__(self, file_path: str) -> None:
-        self.root: Element = ET.parse(file_path).getroot()
+    def __init__(self, bible_file_path: str, chapter_index_map_path: str) -> None:
+        self.root: Element = ET.parse(bible_file_path).getroot()
         self.books = list(map(lambda x: Book(x), self.root.findall("BIBLEBOOK")))
+        self.book_names = {book.name for book in self.books}
+        self.chapter_index_map = self.get_chapter_index_map(chapter_index_map_path)
 
     def __iter__(self):
         return iter(self.books)
@@ -15,6 +21,37 @@ class Bible:
     
     def __getitem__(self, index: int):
         return self.books[index]
+
+    def get_chapter_index_map(self, path: str) -> dict:
+        with open(path, "r") as f:
+            ch_map = json.load(f)
+        
+        return {key.lower(): value for key, value in ch_map.items()}
+
+
+    def get_chapter_indices(self, text: str) -> List[int]:
+        text = text.strip().lower()
+        words = text.split(" ")
+        book_name = " ".join(words[:-1])
+        chapter_number = words[-1]
+
+        if book_name not in self.book_names:
+            raise ValueError(f"Book name {book_name} not found in bible")
+        elif not any(char.isdigit() for char in chapter_number):
+            raise ValueError(f"Chapter number {chapter_number} is not a number")
+        
+        if "-" in chapter_number:
+            start = int(chapter_number.split("-")[0])
+            end = int(chapter_number.split("-")[1])
+            chapter_numbers =  list(range(start, end + 1))
+        else:
+            chapter_numbers = [int(chapter_number)]
+        
+        chapter_names = [f"{book_name} {chapter_number}" for chapter_number in chapter_numbers]
+
+        return [self.chapter_index_map[chapter_name] for chapter_name in chapter_names]
+
+
 
     def get_chapter_name_by_index(self, index: int) -> str:
         count = 0

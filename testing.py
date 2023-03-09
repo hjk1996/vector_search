@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
@@ -11,9 +13,7 @@ from db import BibleSummaryCollection
 
 
 if __name__ == "__main__":
-    openai.api_key = utils.load_api_key()
-    bible = Bible("data/nrsv_bible.xml")
+    bible = Bible("data/nrsv_bible.xml", "data/chapter_index_map.json")
 
-    print(bible[0][0][0].text)
 
-    c = BibleSummaryCollection()
+    print("Ruth".split(" "))
