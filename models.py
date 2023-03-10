@@ -8,10 +8,11 @@ from bible import Bible
 
 class ModelWrapper:
 
-    def __init__(self, model, tokenizer, embedding: torch.Tensor, name: str, device):
+    def __init__(self, model, tokenizer, bible: Bible,  embedding: torch.Tensor, name: str, device):
 
         self.model = model
         self.tokenizer = tokenizer
+        self.bible = bible
         self.embedding = embedding
         self.name = name
         self.device = device
@@ -31,13 +32,27 @@ class ModelWrapper:
         values, indices = values[:n].tolist(), indices[:n].tolist()
         return values, indices
     
+    def get_related_n_chapters(self, sentence: str, n: int, with_text: bool = False) -> List[str]:
+        sims = self.get_cos_sim(sentence)
+        _, indices = self.get_top_n_results(sims, n)
 
-    def get_top_n_acc(self, bible: Bible, gts: dict, n: int ) -> float:
+        if with_text:
+            chapters = [self.bible.get_chapter_name_by_index(index) for index in indices]
+            elements = [chapter.split(" ") for chapter in chapters]
+            books = [" ".join(element[:-1]) for element in elements]
+            numbers = [int(element[-1]) for element in elements]
+            chpter_texts = [self.bible.get_chapter_text(book, number) for book, number in zip(books, numbers)]
+            return [{"chapter": chapter, "text": text} for chapter, text in zip(chapters, chpter_texts)]
+        else:
+            return [self.bible.get_chapter_name_by_index(index) for index in indices]
+    
+
+    def get_top_n_acc(self,  gts: dict, n: int ) -> float:
         total = 0
         correct = 0
 
         chapter_names = list(gts.keys())
-        chapter_indices = [bible.get_chapter_indices(chapter_name) for chapter_name in chapter_names]
+        chapter_indices = [self.bible.get_chapter_indices(chapter_name) for chapter_name in chapter_names]
         sentences = list(gts.values())
 
         for gt, sent in zip(chapter_indices, sentences):

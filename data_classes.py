@@ -39,13 +39,13 @@ class ChapterSummary:
             book_number=json["book_number"],
             chapter=json["chapter"],
             ten_line_summaries=list(
-                map(lambda x: Summary.from_json(x), json["ten_line_summaries"])
+                map(lambda x: Summary.from_json(x), json["10_line_summaries"])
             ),
             five_line_summaries=list(
-                map(lambda x: Summary.from_json(x), json["five_line_summaries"])
+                map(lambda x: Summary.from_json(x), json["5_line_summaries"])
             ),
             one_line_summaries=list(
-                map(lambda x: Summary.from_json(x), json["one_line_summaries"])
+                map(lambda x: Summary.from_json(x), json["1_line_summaries"])
             ),
         )
 

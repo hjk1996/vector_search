@@ -1,33 +1,28 @@
-import openai
+import torch
+import transformers
 
-import openai_functions
-import db
-import asyncio
+
 from bible import Bible
-import utils
-from tqdm import tqdm
+from embeddings import load_embeddings
+from models import ModelWrapper
 
 
-async def summarize_and_save(difficulty: str, max_lines: int) -> None:
-    openai.api_key = utils.load_api_key()
-    collection = db.BibleSummaryCollection()
-    bible = Bible("data/nrsv_bible.xml")
+if __name__ == "__main__":
+    bible = Bible("data/nrsv_bible.xml", "data/chapter_index_map.json")
+    device = torch.device("cpu")
+    embeddings = load_embeddings("embeddings", device)
+    gpt2_xl = transformers.GPT2Model.from_pretrained("gpt2-xl").to("cpu")
+    gpt2_xl_tokenizer = transformers.GPT2Tokenizer.from_pretrained("gpt2-xl")
 
-    for book in bible.books:
-        for chapter in tqdm(book, desc=f"Summarizing {book.name}"):
-            summary = await openai_functions.summarize_bible(
-                book_name=book.name,
-                chapter_number=chapter.number,
-                difficulty=difficulty,
-                max_lines=max_lines,
-            )
-            collection.collection.update_one(
-                {"book": book.name, "chapter": chapter.number},
-                {"$push": {f"{max_lines}_line_summaries": summary.to_json()}},
-            )
+    gpt2_xl_model = ModelWrapper(
+        model=gpt2_xl,
+        tokenizer=gpt2_xl_tokenizer,
+        bible=bible,
+        embedding=embeddings[model_name],
+        name=model_name,
+        device=device,
 
 
-async def main():
-    await summarize_and_save(difficulty="easy", max_lines=5)
+    )
 
-asyncio.run(main())
+    print(gpt2_xl_model.get_related_n_chapters("a man encourages the people to rebuild the temple and promises God's blessing", 5))

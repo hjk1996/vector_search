@@ -10,7 +10,7 @@ class Bible:
     def __init__(self, bible_file_path: str, chapter_index_map_path: str) -> None:
         self.root: Element = ET.parse(bible_file_path).getroot()
         self.books = list(map(lambda x: Book(x), self.root.findall("BIBLEBOOK")))
-        self.book_names = {book.name for book in self.books}
+        self.book_names = {book.name.lower() for book in self.books}
         self.chapter_index_map = self.get_chapter_index_map(chapter_index_map_path)
 
     def __iter__(self):
