@@ -29,7 +29,7 @@ def sentence_to_vector(model, tokenizer, device, sent: str) -> torch.Tensor:
 
 
 def make_bible_embedding(
-    model, tokenizer, device: torch.device, bible: Bible
+    model, tokenizer, device: torch.device, bible: Bible, emb_size: int
 ) -> torch.Tensor:
     bible_emb = []
     for book in bible.books:
@@ -41,7 +41,7 @@ def make_bible_embedding(
             chapter_emb = torch.cat(chapter_emb, dim=0)
             if chapter_emb.shape[0] < 176:
                 chapter_emb = torch.cat(
-                    [chapter_emb, torch.zeros((176 - chapter_emb.shape[0], 1280)).to(device)],
+                    [chapter_emb, torch.zeros((176 - chapter_emb.shape[0], emb_size)).to(device)],
                     dim=0,
                 )
             bible_emb.append(chapter_emb)
