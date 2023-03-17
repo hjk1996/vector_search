@@ -8,7 +8,7 @@ from glob import glob
 import transformers
 
 from bible import Bible
-from data_classes import ChapterSummary
+from data_classes import ChapterSummary, NewsArticle
 
 
 def load_embeddings(embdding_folder: str, device: torch.device) -> dict:
@@ -66,6 +66,23 @@ def make_basic_bible_summary_embedding(
 
     return torch.stack(bible_emb)
 
+def make_news_embedding(
+        model, tokenizer, device, articles: List[NewsArticle]
+) -> torch.Tensor:
+    news_embs = []
+    for article in tqdm(articles):
+        article_emb = []
+        for summary in article.summaries:
+            token = tokenizer.encode(summary)
+            tensor = torch.tensor([token]).to(device)
+            with torch.no_grad():
+                out = model(tensor)
+                emb = out.last_hidden_state.mean(dim=1)
+                news_embs.append(emb)
+        article_emb = torch.cat(article_emb, dim=0)
+        news_embs.append(article_emb)
+    return torch.stack(news_embs, dim=0)
+            
 
 if __name__ == "__main__":
 
