@@ -78,7 +78,7 @@ def make_news_embedding(
             with torch.no_grad():
                 out = model(tensor)
                 emb = out.last_hidden_state.mean(dim=1)
-                news_embs.append(emb)
+                article_emb.append(emb)
         article_emb = torch.cat(article_emb, dim=0)
         news_embs.append(article_emb)
     return torch.stack(news_embs, dim=0)
