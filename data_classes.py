@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import datetime
 
+
 @dataclass
 class Summary:
     difficulty: str = field(repr=True)
@@ -71,11 +72,14 @@ class ChapterSummary:
         for attr in attrs:
             summaries += getattr(self, attr)
         return summaries
-    
+
+
 @dataclass
 class NewsArticle:
-    title: str = field(repr=True, )
-    content: str = field(repr=False )
+    title: str = field(
+        repr=True,
+    )
+    content: str = field(repr=False)
     summaries: list[str] = field(repr=True, default=None)
     date: datetime.date = field(repr=True, default=None)
 
@@ -84,14 +88,16 @@ class NewsArticle:
         return cls(
             title=json["title"],
             content=json["content"],
-            summaries=json["summaries"],
-            date=datetime.datetime.strptime(json["date"], "%Y-%m-%d").date(),
+            summaries=json.get("summaries", None),
+            date=datetime.datetime.strptime(json["date"], "%Y-%m-%d").date()
+            if json.get("date", None) != None
+            else None,
         )
-    
+
     def to_json(self):
         return {
             "title": self.title,
             "content": self.content,
             "summaries": self.summaries,
-            "date": self.date.strftime("%Y-%m-%d"),
+            "date": self.date.strftime("%Y-%m-%d") if self.date != None else None,
         }
