@@ -181,3 +181,5 @@ api_key.txt
 # data
 *.json
 *.pt
+
+/data

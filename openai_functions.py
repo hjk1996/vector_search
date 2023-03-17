@@ -1,7 +1,16 @@
+import ast
+
 import openai
 import utils
 import asyncio
 from data_classes import Summary
+
+import tiktoken
+
+
+def calculate_token_size(tokenizer, text: str) -> int:
+    tokens = tokenizer.encode(text)
+    return len(tokens)
 
 
 def get_embedding(text: str):
@@ -9,6 +18,56 @@ def get_embedding(text: str):
     openai.ChatCompletion
     data = res["data"][0]["embedding"]
     return data
+
+
+async def summarize_news_article(content: str, n_summaries: int) -> list[str]:
+    prompts = [
+        {
+            "role": "system",
+            "content": 
+            f"""
+you are a summarization bot.
+You need to summarize the given content of the news article in one sentence.
+Don't go beyond one sentence. 
+You need to return {n_summaries} different versions of summary in list the list like this.
+["result 1", "result 2", "result 3", "result 4", ...]
+news article content will be in between <CONTENT><CONTENT> tags.
+         """,
+        },
+        {"role": "user", "content": f"<CONTENT>{content}<CONTENT>"},
+    ]
+    res = await openai.ChatCompletion.acreate(
+        model="gpt-3.5-turbo",
+        messages=prompts,
+        temperature=0.7,
+        max_tokens=256,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+    )
+
+    finish_reason = res["choices"][0]["finish_reason"]
+
+    if finish_reason == "length":
+        summaries = res["choices"][0]["message"]["content"]
+        prompts = prompts + [
+            {"role": "assistant", "content": summaries},
+            {"role": "user", "content": "go on please"},
+        ]
+        res = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=prompts,
+            temperature=0.7,
+            max_tokens=512,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+        )
+        summaries = summaries + res["choices"][0]["message"]["content"]
+    else:
+        summaries = res["choices"][0]["message"]["content"]
+
+    return ast.literal_eval(summaries)
 
 
 async def summarize_bible(

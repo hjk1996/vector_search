@@ -21,11 +21,23 @@ class ModelWrapper:
         token = self.tokenizer.encode(sent)
         tensor = torch.tensor([token]).to(self.device)
         with torch.no_grad():
+            # size: (1, embedding_size)
             return self.model(tensor).last_hidden_state.mean(dim=1)
         
     def get_cos_sim(self,  sentence: str) -> torch.tensor:
         sent_emb = self.sentence_to_vector(sentence)
-        return torch.nn.functional.cosine_similarity(sent_emb, self.embedding, dim=2).mean(dim=1)
+        emb_size = self.embedding.size()
+        # size: (chapter_size, verse_size) 
+        cos_sim =  torch.nn.functional.cosine_similarity(sent_emb, self.embedding, dim=2)
+        if emb_size[1] == 176:
+            n_nonzero = torch.count_nonzero(torch.sum(self.embedding, dim=2), dim=1)
+            # size: (chapter_size)
+            return cos_sim.sum(1) / n_nonzero
+        else:
+            # size: (chapter_size)
+            return cos_sim.mean(1) 
+
+
     
     def get_top_n_results(self, sims: torch.tensor, n: int) -> List[int]:
         values, indices = torch.sort(sims, descending=True)
