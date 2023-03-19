@@ -76,6 +76,7 @@ class ChapterSummary:
 
 @dataclass
 class NewsArticle:
+    index: int = field(repr=True)
     title: str = field(
         repr=True,
     )
@@ -84,8 +85,9 @@ class NewsArticle:
     date: datetime.date = field(repr=True, default=None)
 
     @classmethod
-    def from_json(cls, json):
+    def from_json(cls, i, json):
         return cls(
+            index=i,
             title=json["title"],
             content=json["content"],
             summaries=json.get("summaries", None),
@@ -96,6 +98,7 @@ class NewsArticle:
 
     def to_json(self):
         return {
+            "index": self.index,
             "title": self.title,
             "content": self.content,
             "summaries": self.summaries,

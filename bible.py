@@ -82,15 +82,16 @@ class Bible:
 
         return  book[chapter - 1][verse - 1]
 
-    def get_chapter_text(self, book: any, chapter: int) -> list[str]:
+    def get_chapter_text(self, book: any, chapter: int) -> List[str]:
         if type(book) == str:
             book: Book = self.books[self.get_book_index_by_name(book)]
         elif type(book) == int:
             book: Book = self.books[book]
         else:
             raise TypeError("book must be either a string or an integer")
-
+        
         return book[chapter - 1].get_text()
+
 
     def get_book_text(self, book: any) -> list[list[str]]:
         if type(book) == str:
