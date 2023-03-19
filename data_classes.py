@@ -80,7 +80,7 @@ class NewsArticle:
         repr=True,
     )
     content: str = field(repr=False)
-    summaries: list[str] = field(repr=True, default=None)
+    summaries: list[str] = field(repr=False, default=None)
     date: datetime.date = field(repr=True, default=None)
 
     @classmethod
