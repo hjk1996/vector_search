@@ -19,7 +19,7 @@ class ArticleFinder:
         self.model = model
         self.tokenizer = tokenizer
         self.articles = articles
-        self.news_embedding = news_embedding
+        self.news_embeddings = news_embedding
 
     def __len__(self) -> int:
         return len(self.articles)
@@ -40,13 +40,21 @@ class ArticleFinder:
 
         return self.articles[index]
 
-    def get_cos_sim(self, article_index: int) -> float:
+    def get_one_to_one_cos_sim(self, article_index: int) -> torch.Tensor:
         return torch.cosine_similarity(
-            self.news_embedding[article_index], self.news_embedding, dim=2
+            self.news_embeddings[article_index], self.news_embeddings, dim=2
         ).mean(1)
 
-    def find_n_related_articles(self, article_index: int, n: int) -> List[NewsArticle]:
-        cos_sim = self.get_cos_sim(article_index)
+    def get_one_to_many_cos_sim(self, article_index: int) -> torch.Tensor:
+        article_emb = self.news_embeddings[article_index] # size: (n_summary, embedding_size)
+        results = [torch.cosine_similarity(emb.unsqueeze(0), news_emb, dim=2).mean(1) for emb in article_emb] # size: (n_summary, n_news)
+        return torch.stack(results).mean(0) # size: (n_news)
+
+    def find_n_related_articles(self, article_index: int, n: int, one_to_one: bool = True) -> List[NewsArticle]:
+        if one_to_one:
+            cos_sim = self.get_one_to_one_cos_sim(article_index)
+        else:
+            cos_sim = self.get_one_to_many_cos_sim(article_index)
         _, indices = torch.sort(cos_sim, descending=True)
         indices = indices[: n + 1].tolist()
         indices.remove(article_index)
@@ -61,7 +69,7 @@ class ArticleFinder:
 
     def search_n_related_articles(self, search_text: str, n: int) -> List[NewsArticle]:
         search_emb = self.sentence_to_vector(search_text)
-        cos_sim = torch.cosine_similarity(search_emb, self.news_embedding, dim=2).mean(
+        cos_sim = torch.cosine_similarity(search_emb, self.news_embeddings, dim=2).mean(
             1
         )
         _, indices = torch.sort(cos_sim, descending=True)
@@ -74,9 +82,12 @@ if __name__ == "__main__":
     model = GPT2Model.from_pretrained("gpt2-xl")
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2-xl")
     articles = collection.find()
-    articles = [NewsArticle.from_json(article) for article in articles]
-    news_emb = torch.load("data/news_emb.pt", map_location=torch.device("cpu"))
-    news_articles = ArticleFinder(model, tokenizer, articles, news_emb)
-    pprint(
-        news_articles.search_n_related_articles("virus spreads all over the world", 10)
-    )
+    articles = [NewsArticle.from_json(i, article) for i, article in enumerate(articles)]
+    news_emb: torch.Tensor = torch.load("data/news_emb.pt", map_location=torch.device("cpu"))
+
+
+    finder = ArticleFinder(model, tokenizer, articles, news_emb)
+    a = finder.find_n_related_articles(0, 10)
+    pprint(a)
+    b = finder.find_n_related_articles(0, 10, one_to_one=False)
+    pprint(b)

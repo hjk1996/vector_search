@@ -73,11 +73,10 @@ async def news_articles(page: int):
 @app.get("/news_article/{article_index}")
 async def news_article(article_index: int):
     article = article_finder.get_article_by_index(article_index)
-    print(article)
     if article is str:
         return {"error": article, "data": None}
     else:
-        related_articles = article_finder.find_n_related_articles(article_index, 5)
+        related_articles = article_finder.find_n_related_articles(article_index, 10)
         return {
             "error": None,
             "data": {
