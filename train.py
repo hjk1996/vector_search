@@ -2,13 +2,16 @@ import argparse
 
 import torch
 import torch.multiprocessing as mp
-from transformers import AdamW
+from transformers import AdamW,     get_linear_schedule_with_warmup
+
 import torch.nn.functional as F
 
 
 from bible import Bible
 from models import MyModel
 from torch.utils.data import Dataset, DataLoader
+
+import torch.nn as nn
 
 
 
@@ -37,9 +40,37 @@ class Dataset:
         self.pairs = pairs
 
 
-def train_function():
+def train_function(args):
     model = MyModel()
     optimizer = AdamW(params=model.parameters(), lr=2e-5, correct_bias=True)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    model.to(device)
+
+    lr_scheduler = get_linear_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=500,
+        num_training_steps=args.steps,
+    )
+
+    cross_entropy_loss = nn.CrossEntropyLoss()
+    max_grad_norm = 1
+
+    model.train()
+
+    for step, batch in enumerate(dataloader):
+
+        anchor = model.tokenizer(batch[0], padding="max_length", truncation=True, max_length=args.max_length, return_tensors="pt")
+        positive = model.tokenizer(batch[1], padding="max_length", truncation=True, max_length=args.max_length, return_tensors="pt")
+        negative = model.tokenizer(batch[2], padding="max_length", truncation=True, max_length=args.max_length, return_tensors="pt")
+
+        embeddings_a = model(**anchor.to(device))
+        embeddings_p = model(**positive.to(device))
+        embeddings_n = model(**negative.to(device))
+
+        embeddings_c = torch.cat([embeddings_p, embeddings_n])
+
+        scores = torch.matmul(embeddings_a, embeddings_c.T) * args.scale
 
 
 
@@ -56,8 +87,9 @@ if __name__ == "__main__":
     bible = Bible("./data/nrsv_bible.xml", "./data/chapter_index_map.json", "data/bible_summary_similarities.pt")
 
     dataset = Dataset(bible)
-    print(len(dataset))
-    # dataloader= DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.nprocs)
+    dataloader= DataLoader(dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.nprocs)
+
+    
 
     # for batch in dataloader:
     #     anchors, positives, negatives, book_index_one_hot, chapter_index_one_hot = batch

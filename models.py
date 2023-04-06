@@ -5,7 +5,9 @@ import torch.nn as nn
 from bible import Bible
 
 from transformers import AutoTokenizer, AutoModel
+from transformers.tokenization_utils_base import BatchEncoding
 from sentence_transformers import SentenceTransformer, util, losses
+
 
 
 
@@ -139,12 +141,12 @@ class MyModel(nn.Module):
         token_embeddings = model_output[0] #First element of model_output contains all token embeddings
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+    
 
 
-    def forward(self, sentences):
-        encoded_input =  self.tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
-        t_out = self.st(**encoded_input) 
-        s_embeddings = self.mean_pooling(t_out, encoded_input['attention_mask'])
+    def forward(self, inputs: BatchEncoding):
+        t_out = self.st(**inputs) 
+        s_embeddings = self.mean_pooling(t_out, inputs['attention_mask'])
         book_logits = self.book_linear(s_embeddings)
         chapter_logits = self.chapter_linear(s_embeddings)
         return s_embeddings, book_logits, chapter_logits
