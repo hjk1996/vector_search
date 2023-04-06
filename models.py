@@ -144,12 +144,18 @@ class MyModel(nn.Module):
     
 
 
-    def forward(self, inputs: BatchEncoding):
-        t_out = self.st(**inputs) 
-        s_embeddings = self.mean_pooling(t_out, inputs['attention_mask'])
+    def forward(self, **kwargs):
+        t_out = self.st(**kwargs)    
+        attention_mask = kwargs['attention_mask']
+        s_embeddings = self.mean_pooling(t_out, attention_mask)        
         book_logits = self.book_linear(s_embeddings)
         chapter_logits = self.chapter_linear(s_embeddings)
         return s_embeddings, book_logits, chapter_logits
+
+
+
+
+
 
 
 if __name__ == "__main__":
