@@ -104,3 +104,11 @@ class NewsArticle:
             "summaries": self.summaries,
             "date": self.date.strftime("%Y-%m-%d") if self.date != None else None,
         }
+
+@dataclass
+class TrainData:
+    anchor: str = field(repr=True)
+    pos: str = field(repr=True)
+    neg: str = field(repr=True)
+    book_index: int = field(repr=True)
+    chapter_index: int = field(repr=True)

@@ -1,8 +1,14 @@
 from typing import List
 
 import torch
-
+import torch.nn as nn
 from bible import Bible
+
+from transformers import AutoTokenizer, AutoModel
+from sentence_transformers import SentenceTransformer, util, losses
+
+
+
 
 
 class ModelWrapper:
@@ -116,3 +122,39 @@ class Ensemble:
             total += 1
 
         return correct / total
+
+
+class MyModel(nn.Module):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        self.st = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+        self.book_linear = nn.Linear(384, 176)
+        self.chapter_linear = nn.Linear(384, 1189)
+
+
+    @staticmethod
+    def mean_pooling(model_output, attention_mask):
+        token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+
+    def forward(self, sentences):
+        encoded_input =  self.tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
+        t_out = self.st(**encoded_input) 
+        s_embeddings = self.mean_pooling(t_out, encoded_input['attention_mask'])
+        book_logits = self.book_linear(s_embeddings)
+        chapter_logits = self.chapter_linear(s_embeddings)
+        return s_embeddings, book_logits, chapter_logits
+
+
+if __name__ == "__main__":
+    model = MyModel()
+
+    s, b, c = model("Hello world")
+
+    print(s.size())
+    print(b.size())
+    print(c.size())

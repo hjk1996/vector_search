@@ -19,15 +19,15 @@ async def summarize_bible_and_save(difficulty: str, max_lines: int) -> None:
     bible = Bible("data/nrsv_bible.xml")
 
     for book in bible.books:
-        for chapter in tqdm(book, desc=f"Summarizing {book.name}"):
+        for chapter in tqdm(book, desc=f"Summarizing {book.book_name}"):
             summary = await openai_functions.summarize_bible(
-                book_name=book.name,
-                chapter_number=chapter.number,
+                book_name=book.book_name,
+                chapter_number=chapter.chapter_number,
                 difficulty=difficulty,
                 max_lines=max_lines,
             )
             collections.bible_collection.update_one(
-                {"book": book.name, "chapter": chapter.number},
+                {"book": book.book_name, "chapter": chapter.chapter_number},
                 {"$push": {f"{max_lines}_line_summaries": summary.to_json()}},
             )
 
